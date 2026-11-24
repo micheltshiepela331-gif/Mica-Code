@@ -1,35 +1,47 @@
-name: Build Android APK
+name: Fabriquer APK Mica Code
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
-  workflow_dispatch: # Permet de lancer la fabrication manuellement
+    branches: [main]
+    paths: [index.html]
 
 jobs:
-  build:
+  apk:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Decode Keystore
-      run: |
-        echo "${{ secrets.KEYSTORE_B64 }}" | base64 --decode > app/keystore.jks
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Build Release APK
-      run: |
-        chmod +x ./gradlew
-        ./gradlew assembleRelease -Pandroid.injected.signing.store.file=$PWD/app/keystore.jks -Pandroid.injected.signing.store.password=${{ secrets.KS_PASS }} -Pandroid.injected.signing.key.alias=${{ secrets.KS_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.KS_PASS }}
+      - name: Préparer le projet Android
+        run: |
+          mkdir www
+          cp index.html www/index.html
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap init "Mica Code" com.lushipratique.micacode --web-dir=www
+          npx cap add android
+          npx cap sync android
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: Mica-Code-APK
-        path: app/build/outputs/apk/release/*.apk
+      - name: Fabriquer l'APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Garder l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: micacode-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
