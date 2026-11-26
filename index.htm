@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <title>Mica Code</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--header:#010409;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#2f81f7;--green:#238636;--editor-size:14px}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;min-height:0;margin:0;overflow:hidden}
+    body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+    button,input,textarea{font:inherit}
+    button{min-height:36px;padding:6px 11px;border:1px solid var(--border);border-radius:6px;color:var(--text);background:var(--panel);cursor:pointer;white-space:nowrap}
+    button:hover{background:#242c36}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:white}
+    #top{display:flex;align-items:center;gap:8px;flex:none;min-width:0;padding:8px 12px;background:var(--header);border-bottom:1px solid var(--border)}
+    #brand{font-weight:700;white-space:nowrap}#filename{width:min(220px,32vw);min-width:100px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)}#status{margin-left:auto;color:#7ee787;font-size:12px;white-space:nowrap}
+    #toolbar{display:flex;align-items:center;gap:6px;flex:none;overflow-x:auto;padding:7px 10px;background:var(--panel);border-bottom:1px solid var(--border);scrollbar-width:thin}
+    #workspace{display:flex;flex:1;min-width:0;min-height:0;overflow:hidden}
+    #editorPane,#previewPane{display:flex;flex-direction:column;flex:1 1 50%;min-width:0;min-height:0;overflow:hidden}
+    .paneHead{display:flex;align-items:center;gap:8px;flex:none;min-height:36px;padding:5px 10px;background:var(--panel);border-bottom:1px solid var(--border);color:var(--muted);font-size:12px}
+    .paneHead strong{color:var(--text)}
+    #editor{display:block;flex:1;width:100%;min-width:0;min-height:0;resize:none;overflow:auto;padding:14px;border:0;outline:0;background:var(--bg);color:var(--text);font:var(--editor-size)/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2;white-space:pre;overflow-wrap:normal;overscroll-behavior:contain}
+    #preview{display:block;flex:1;width:100%;height:100%;min-width:0;min-height:0;border:0;background:white}
+    #divider{flex:0 0 6px;background:var(--border);cursor:col-resize;touch-action:none}
+    #divider:hover{background:var(--accent)}
+    #statusbar{display:flex;gap:16px;flex:none;padding:4px 10px;background:var(--accent);color:white;font-size:12px}
+    #lineInfo{margin-right:auto}
+    .mobileOnly{display:none}
+    @media(max-width:760px){
+      #workspace{flex-direction:column}
+      #editorPane,#previewPane{flex:1 1 50%;width:100%}
+      #divider{flex:0 0 6px;cursor:row-resize}
+      #top{padding:6px 8px}#toolbar{padding:5px 8px}#statusbar{gap:9px;font-size:11px}
+      .desktopOnly{display:none}
+    }
+    @media(min-width:1200px){#editorPane{flex-basis:68%}#previewPane{flex-basis:32%}}
+    body.editor-only #previewPane,body.editor-only #divider{display:none}
+    body.preview-only #editorPane,body.preview-only #divider{display:none}
+    body.editor-only #editorPane,body.preview-only #previewPane{flex:1 1 100%}
+    body.fullscreen #top,body.fullscreen #toolbar,body.fullscreen #statusbar{display:none}
+  </style>
+</head>
+<body>
+  <header id="top">
+    <span id="brand">◐ Mica Code</span>
+    <input id="filename" aria-label="Nom du fichier" value="index.html">
+    <span id="status" role="status" aria-live="polite">Prêt</span>
+  </header>
+  <nav id="toolbar" aria-label="Outils de l’éditeur">
+    <button id="pcMode" type="button" aria-pressed="false" title="Basculer entre le mode PC et le mode téléphone">🖥 Mode PC</button>
+    <button id="showCode" type="button" aria-pressed="true">‹› Code</button>
+    <button id="showPreview" type="button" aria-pressed="true">▣ Aperçu</button>
+    <button id="run" type="button" title="Mettre à jour l’aperçu">▶ Exécuter</button>
+    <button id="undo" type="button" title="Annuler (Ctrl+Z)">↶ Annuler</button>
+    <button id="redo" type="button" title="Rétablir (Ctrl+Y)">↷ Rétablir</button>
+    <button id="fontDown" type="button" title="Réduire le texte">A−</button>
+    <button id="fontUp" type="button" title="Agrandir le texte">A+</button>
+    <button id="download" type="button">⬇ Télécharger</button>
+    <button id="fullscreen" type="button" title="Masquer les barres">⛶ Plein écran</button>
+  </nav>
+  <main id="workspace">
+    <section id="editorPane" aria-label="Éditeur de code">
+      <div class="paneHead"><strong id="fileLabel">index.html</strong><span id="stats">0 lignes · 0 caractères</span></div>
+      <textarea id="editor" aria-label="Code HTML" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off"></textarea>
+    </section>
+    <div id="divider" role="separator" aria-label="Séparateur entre code et aperçu" aria-orientation="vertical" tabindex="0"></div>
+    <section id="previewPane" aria-label="Aperçu du site">
+      <div class="paneHead"><strong>Aperçu en direct</strong><span>Le code reste isolé dans un aperçu sécurisé.</span></div>
+      <iframe id="preview" title="Aperçu du projet" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+    </section>
+  </main>
+  <footer id="statusbar"><span id="lineInfo">Ln 1, Col 1</span><span>UTF-8</span><span>HTML</span><span id="saveInfo">Sauvegarde locale activée</span></footer>
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id)};
+  var editor=$("editor"),preview=$("preview"),status=$("status"),workspace=$("workspace");
+  var starter='<!doctype html>\n<html lang="fr">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>Mon premier site</title>\n  <style>body{font-family:system-ui,sans-serif;max-width:760px;margin:60px auto;padding:0 20px}button{padding:10px 16px}</style>\n</head>\n<body>\n  <h1>Bonjour Michel !</h1>\n  <p>Modifie ce code : l’aperçu se met à jour automatiquement.</p>\n  <button onclick="document.querySelector('p').textContent='Ça fonctionne !'">Clique ici</button>\n</body>\n</html>';
+  var storageKey="mica_code_desktop_v1", timer=0, history=[""],historyIndex=0,historyTimer=0;
+  function safeGet(key){try{return localStorage.getItem(key)}catch(e){return null}}
+  function safeSet(key,value){try{localStorage.setItem(key,value);return true}catch(e){return false}}
+  function notify(message){status.textContent=message;clearTimeout(timer);timer=setTimeout(function(){status.textContent="Prêt"},2200)}
+  function updateStats(){var text=editor.value;$("stats").textContent=(text.split("\n").length)+" lignes · "+text.length+" caractères";var before=text.slice(0,editor.selectionStart).split("\n");$("lineInfo").textContent="Ln "+before.length+", Col "+(before[before.length-1].length+1)}
+  function persist(){var ok=safeSet("mica_code_content_v1",editor.value);safeSet("mica_code_filename_v1",$("filename").value||"index.html");$("saveInfo").textContent=ok?"Sauvegardé localement":"Stockage indisponible"}
+  function updatePreview(){preview.srcdoc=editor.value;persist()}
+  function schedulePreview(){updateStats();clearTimeout(timer);timer=setTimeout(function(){updatePreview();status.textContent="Aperçu mis à jour"},350);scheduleHistory()}
+  function scheduleHistory(){clearTimeout(historyTimer);historyTimer=setTimeout(function(){var current=editor.value;if(history[historyIndex]!==current){history=history.slice(0,historyIndex+1);history.push(current);if(history.length>100)history.shift();historyIndex=history.length-1}},500)}
+  function setCode(value){editor.value=value;updateStats();updatePreview()}
+  var saved=safeGet("mica_code_content_v1");editor.value=saved===null?starter:saved;
+  var savedName=safeGet("mica_code_filename_v1");if(savedName)$("filename").value=savedName;
+  $("fileLabel").textContent=$("filename").value;
+  history=[editor.value];updateStats();updatePreview();
+  var pc=safeGet(storageKey);if(pc===null)pc=String(window.matchMedia("(min-width: 900px)").matches);
+  function setPcMode(enabled){document.body.classList.toggle("pc-mode",enabled);$("pcMode").setAttribute("aria-pressed",String(enabled));$("pcMode").textContent=enabled?"📱 Mode téléphone":"🖥 Mode PC";safeSet(storageKey,String(enabled));workspace.style.flexDirection=enabled?"row":"column";$("divider").style.cursor=enabled?"col-resize":"row-resize"}
+  setPcMode(pc==="true");
+  $("pcMode").addEventListener("click",function(){setPcMode(!document.body.classList.contains("pc-mode"))});
+  $("run").addEventListener("click",function(){updatePreview();notify("Aperçu actualisé")});
+  editor.addEventListener("input",schedulePreview);
+  ["keyup","click","select"].forEach(function(event){editor.addEventListener(event,updateStats)});
+  $("filename").addEventListener("input",function(){$("fileLabel").textContent=this.value||"index.html";persist()});
+  $("showCode").addEventListener("click",function(){var show=!document.body.classList.contains("preview-only");document.body.classList.toggle("editor-only",!show);document.body.classList.remove("preview-only");this.setAttribute("aria-pressed",String(show));$("showPreview").setAttribute("aria-pressed",String(show))});
+  $("showPreview").addEventListener("click",function(){var show=!document.body.classList.contains("editor-only");document.body.classList.toggle("preview-only",!show);document.body.classList.remove("editor-only");this.setAttribute("aria-pressed",String(show));$("showCode").setAttribute("aria-pressed",String(show))});
+  $("fontDown").addEventListener("click",function(){var size=parseInt(getComputedStyle(document.documentElement).getPropertyValue("--editor-size"),10)||14;document.documentElement.style.setProperty("--editor-size",Math.max(9,size-1)+"px")});
+  $("fontUp").addEventListener("click",function(){var size=parseInt(getComputedStyle(document.documentElement).getPropertyValue("--editor-size"),10)||14;document.documentElement.style.setProperty("--editor-size",Math.min(30,size+1)+"px")});
+  $("download").addEventListener("click",function(){var blob=new Blob([editor.value],{type:"text/html;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=$("filename").value.trim()||"index.html";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);notify("Fichier téléchargé")});
+  $("fullscreen").addEventListener("click",function(){document.body.classList.toggle("fullscreen")});
+  function recordHistory(){var value=editor.value;if(history[historyIndex]!==value){history=history.slice(0,historyIndex+1);history.push(value);if(history.length>100)history.shift();historyIndex=history.length-1}}
+  function restoreHistory(index){if(index<0||index>=history.length)return;historyIndex=index;setCode(history[index]);editor.focus()}
+  $("undo").addEventListener("click",function(){recordHistory();restoreHistory(historyIndex-1)});
+  $("redo").addEventListener("click",function(){restoreHistory(historyIndex+1)});
+  editor.addEventListener("keydown",function(event){if(event.key==="Tab"){event.preventDefault();var start=editor.selectionStart,end=editor.selectionEnd;editor.setRangeText("  ",start,end,"end");schedulePreview()}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="s"){event.preventDefault();persist();notify("Projet sauvegardé sur cet appareil")}});
+  $("divider").addEventListener("keydown",function(event){if(event.key==="ArrowLeft"||event.key==="ArrowUp"){event.preventDefault();$("editorPane").style.flex="1 1 60%";$("previewPane").style.flex="1 1 40%"}if(event.key==="ArrowRight"||event.key==="ArrowDown"){event.preventDefault();$("editorPane").style.flex="1 1 75%";$("previewPane").style.flex="1 1 25%"}});
+  window.addEventListener("beforeunload",persist);
+})();
+</script>
+</body>
+</html>
